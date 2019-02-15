@@ -2,6 +2,7 @@ import numpy as numpy
 
 learnSet = numpy.genfromtxt("dataset1.csv", delimiter=";", usecols=[0,1,2,3,4,5,6,7], converters={5: lambda s: 0 if s == b"-1" else float(s), 7: lambda s: 0 if s == b"-1" else float(s)})
 validationSet = numpy.genfromtxt("validation1.csv", delimiter=";", usecols=[0,1,2,3,4,5,6,7], converters={5: lambda s: 0 if s == b"-1" else float(s), 7: lambda s: 0 if s == b"-1" else float(s)})
+days = numpy.genfromtxt("days.csv", delimiter=";", usecols=[0,1,2,3,4,5,6,7], converters={5: lambda s: 0 if s == b"-1" else float(s), 7: lambda s: 0 if s == b"-1" else float(s)})
 
 def GetDistance(learnSet, testSet):
         distance = [] #Creates an empty list(2d array)
@@ -49,12 +50,22 @@ def Validater(learnSet, validationSet, k):
        return  (100/len(validationSet)*numberOfCorrectGuesses) #Get procentage of correctness
 
 def ValidateRange(learnSet, validationSet, beginK, stopK):
-        if beginK <= 0: #If the givven K is smaller than 0
+        if beginK <= 0: #If the givven K is smaller than 01
                 beginK = 0 #the K will be 0
         if stopK >= len(learnSet): #If the givven K is bigger than the length of the learn set
                 stopK = len(learnSet) #The K will become the length of the learn set
         for i in range(beginK,stopK): #For every K inbetween beginK and stopK
                 print(f"{i}: {Validater(learnSet, validationSet, i)}") #Print procentage of correct guesses
 
+def GuessDays(learnSet, days, k):
+        for i in range(len(days)):
+                print(f"Day {i} is a {MostCommonInList(GetLabels(GetNearest(GetDistance(learnSet, days[i]), k)))} day.") #Best guess of a givven day will be calculated and printed
 
-ValidateRange(learnSet, validationSet, 25, 65) #Function call
+
+print("==============================")
+GuessDays(learnSet, days, 59)                           #Geusses the givven days with a K of 59
+print("==============================")
+print(f"58: {Validater(learnSet, validationSet, 58)}")  #Caluclates the correctness with a K of 58 
+print("==============================")
+ValidateRange(learnSet, validationSet, 54, 64)          #Caluclates the correctness with a K of 54 to 64
+print("==============================")
