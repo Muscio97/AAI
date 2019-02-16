@@ -1,103 +1,80 @@
-import numpy as numpy
+import numpy
 import math
 
-learnSet = numpy.genfromtxt("dataset1.csv", delimiter=";", usecols=[0, 1, 2, 3, 4, 5, 6, 7],
+#Get data in var
+dataSet = numpy.genfromtxt("dataset1.csv", delimiter=";", usecols=[0, 1, 2, 3, 4, 5, 6, 7],
                             converters={5: lambda s: 0 if s == b"-1" else float(s),
                                         7: lambda s: 0 if s == b"-1" else float(s)})
-validationSet = numpy.genfromtxt("validation1.csv", delimiter=";", usecols=[0, 1, 2, 3, 4, 5, 6, 7],
-                                 converters={5: lambda s: 0 if s == b"-1" else float(s),
-                                             7: lambda s: 0 if s == b"-1" else float(s)})
 
 
-def GetDistance(learnSet, testSet):
-    distance = []  # Creates an empty list(2d array)
-    for rowId in range(len(learnSet)):  # For all elements in learnSet
-        sum = 0  # Sets the sum of distances to 0
-        for i in range(1, learnSet.shape[1]):  # For every element(form 1) in the seconde row of the 2d array
-            sum += numpy.abs(testSet[i] - learnSet[rowId][i]) ** 2
-            # Calculates the difference between the givven data point and existing data
-        distance.append([learnSet[rowId][0], numpy.sqrt(sum)])
-        # Adds the id and Pythagorean theorem result to the 2d array
-    return distance
+def GetDistance(dataSet, testSet):                                # Gets dataSet and testSet, and compairs thier distances
+    distance = []                                                 # Creates an empty list(2d array)
+    for rowId in range(len(dataSet)):                             # For all elements in dataSet
+        sum = 0                                                   # Sets the sum of distances to 0
+        for i in range(1, dataSet.shape[1]):                      # For every element(form 1) in the seconde row of the 2d array
+            sum += numpy.abs(testSet[i] - dataSet[rowId][i]) ** 2 # Calculates the difference between the givven data point and existing data
+        distance.append([dataSet[rowId][0], numpy.sqrt(sum)])     # Adds the id and Pythagorean theorem result to the 2d array
+    return distance                                               # Returns list of id's and distances
 
 
-def GetLabels(nearest):
-    labels = []
-    for index in range(len(nearest)):  # For every element in the list that was givven
-        label = nearest[index][
-                    0] % 10000  # The modulo is used to be able to work, on data different than data form 2000
-        if label < 301:  # If the label is before first of March
-            labels.append('winter')  # The label will be marked a 'winter'
-        elif 301 <= label < 601:  # If the label is between first of March and first of June
-            labels.append('lente')  # The label will be marked a 'lente'
-        elif 601 <= label < 901:  # If the label is between first of June and first of September
-            labels.append('zomer')  # The label will be marked a 'zomer'
-        elif 901 <= label < 1201:  # If the label is between first of September and first of December
-            labels.append('herfst')  # The label will be marked a 'herfst'
-        else:  # If the label is after first of December
-            labels.append('winter')  # The label will be marked a 'winter'
-    return labels
+def GetDataRange(dataSet):
+    dataRange = [[1, 0]] + [[-math.inf, math.inf] for i in range(1, dataSet.shape[1])] # List of elements with max and min values
+    for rowId in range(len(dataSet)):                # For all elements in dataSet
+        for i in range(1, dataSet.shape[1]):         # For every element(form 1) in the seconde row of the 2d array
+            if dataRange[i][0] < dataSet[rowId][i]:  # Check if the element is above the current maximum
+                dataRange[i][0] = dataSet[rowId][i]  # Then sets the current maximum to the elements data
+            if dataRange[i][1] > dataSet[rowId][i]:  # Check if the element is below the current minimum
+                dataRange[i][1] = dataSet[rowId][i]  # Then sets the current minimum to the element data
+    return dataRange
 
 
-def MostCommonInList(list):
-    return max(set(list), key=list.count,
-               default=0)  # Gets the most common element(season) in the list and returns this element.
+def GenerateCentroids(dataSet, k):                          # Generates centroids randomly(inside of the dataSet's boundaries)
+    centroids = []                                          # List of centroids.
+    dataRange = GetDataRange(dataSet)                       # Get the boundaries to pick between
+    for clusterIndex in range(k):                           # Loops K times, so there will be K centroids
+        centroids.append([numpy.random.randint(dataRange[i][1], dataRange[i][0]) for i in range(len(dataRange))])                                                  # Generates the centroids randomly(inside of the dataSet's boundaries)
+        centroids[-1][0] = clusterIndex                     # Gives the (last)centroid an id
+    return numpy.array(centroids)                           # Returns a numpy array of centroids(with id's) 
 
 
-def GetMaxMin(learnSet):
-    maxmin = [[1, 0]] + [[-math.inf, math.inf] for i in range(1, learnSet.shape[1])]
-    # List of elements with max and min values
-    for rowId in range(len(learnSet)):  # For all elements in learnSet
-        for i in range(1, learnSet.shape[1]):  # For every element(form 1) in the seconde row of the 2d array
-            if maxmin[i][0] < learnSet[rowId][i]:  # Check max
-                maxmin[i][0] = learnSet[rowId][i]  # Set new max
-            if maxmin[i][1] > learnSet[rowId][i]:  # Check min
-                maxmin[i][1] = learnSet[rowId][i]  # Set new min
-    return maxmin
-
-
-def GenerateCentroids(learnSet, k):
-    centroids = []  # List of data for cluster points
-    maxmin = GetMaxMin(learnSet)  # Get limiters for data board
-    for clusterIndex in range(k):  # Loop k times clusters
-        centroids.append(
-            [numpy.random.randint(maxmin[i][1], maxmin[i][0]) for i in range(len(maxmin))])  # Randomize cluster pint
-        centroids[-1][0] = clusterIndex
-    return numpy.array(centroids)  # Convert to numpy array
-
-
-def FindNearestCentroid(centroids, dataSet):
-    dataWithClusters = []  # List of data points with the distance
-    for data in dataSet:
-        dataWithClusters.append([
-            data,
-            GetDistance(centroids, data)
+def indexDistanceToCentroids(centroids, dataSet):           # Determines for each data point what it's distance is to each centroid
+    dataWithClusters = []                                   # List of data points with the distance
+    for data in dataSet:                                    # For each element in dataSet
+        dataWithClusters.append([               
+            data,                                           # Add the data
+            GetDistance(centroids, data)                    # And the distance to the centroids
         ])
-    return dataWithClusters
+    return dataWithClusters                                 # Returns a list filled with data and it's distance to every centroid
 
 
-def MakeClusters(dataWithClusters, k):
-    clusters = {i: [] for i in range(k)}
-    for data in dataWithClusters:
-        clusterArray = data[1]
-        clusterArray.sort(key=lambda x: x[1])
-        clusters[clusterArray[0][0]].append([clusterArray[0], data[0]])
-    return list(clusters.values())
+def MakeClusters(dataWithClusters, k):                      # Makes clusters
+    clusters = {i: [] for i in range(k)}                    # Create a dictonary the size of the number of centroids
+    for data in dataWithClusters:                           # For every element in dataWithClusters
+        clusterArray = data[1]                              # Get distances to every centroid of this data point
+        clusterArray.sort(key=lambda x: x[1])               # Sort on distances
+        clusters[clusterArray[0][0]].append([clusterArray[0], data[0]]) # Add data point and centroid id to clustter 
+    return list(clusters.values())                          # return list of clusters with data points
 
 
-def RecalculateCentroidPosition(clusters, learnSet):
+def RecalculateCentroidPosition(clusters, dataSet):
     centroids = []
     for cluster in clusters:
         if len(cluster) is 0:
             continue
-        centroid = [cluster[0][0][0]] + ([0] * (learnSet.shape[1] - 1))  # Is 7 + 1
+        centroid = [cluster[0][0][0]] + ([0] * (dataSet.shape[1] - 1))  # Is 7 + 1
         for data in cluster:
-            for elIndex in range(1, learnSet.shape[1]):  # Every element in original point data
+            for elIndex in range(1, dataSet.shape[1]):  # Every element in original point data
                 centroid[elIndex] += data[1][elIndex]
-        for elIndex in range(1, learnSet.shape[1]):
+        for elIndex in range(1, dataSet.shape[1]):
             centroid[elIndex] = centroid[elIndex] / len(cluster)
         centroids.append(centroid)
     return numpy.array(centroids)
+
+
+def CalculateBestCentroids(centroids, dataSet, k, nRecalc):
+    for i in range(nRecalc):
+        centroids = RecalculateCentroidPosition(MakeClusters(indexDistanceToCentroids(centroids, dataSet), k), dataSet)
+    return centroids
 
 
 def CheckDifferencial(distentces):
@@ -106,26 +83,23 @@ def CheckDifferencial(distentces):
     return numpy.diff(distentces, n=2)[-1]
 
 
-def CalculateBestK(learnSet, nRecalc):
+def CalculateBestK(dataSet, nRecalc):
     distentces = []
-    for k in range(2, len(learnSet) - 1):
-        centroids = CalculateBestCentroids(GenerateCentroids(learnSet, k), learnSet, k, nRecalc)
-        clusters = MakeClusters(FindNearestCentroid(centroids, learnSet), k)
-        dist = 0
+    for k in range(2, len(dataSet) - 1):
+        centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, nRecalc)
+        clusters = MakeClusters(indexDistanceToCentroids(centroids, dataSet), k)
+        totalDistanceOfCluster = 0
         for cluster in clusters:
             if len(cluster) > 0:
                 for data in cluster[0]:
-                    dist += data[1]
-        distentces.append(dist)
+                    totalDistanceOfCluster += data[1]
+        distentces.append(totalDistanceOfCluster)
         if CheckDifferencial(distentces) < 0:
             return k - 1
 
 
-def CalculateBestCentroids(centroids, learnSet, k, nRecalc):
-    for i in range(nRecalc):
-        centroids = RecalculateCentroidPosition(MakeClusters(FindNearestCentroid(centroids, learnSet), k), learnSet)
-    return centroids
+
 
 
 for i in range(50):
-    print(CalculateBestK(learnSet, 1))
+    print(CalculateBestK(dataSet, 20))
