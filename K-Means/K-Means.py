@@ -53,53 +53,54 @@ def MakeClusters(dataWithClusters, k):                      # Makes clusters
         clusterArray = data[1]                              # Get distances to every centroid of this data point
         clusterArray.sort(key=lambda x: x[1])               # Sort on distances
         clusters[clusterArray[0][0]].append([clusterArray[0], data[0]]) # Add data point and centroid id to clustter 
-    return list(clusters.values())                          # return list of clusters with data points
+    return list(clusters.values())                          # Returna list of clusters with data points
 
 
-def RecalculateCentroidPosition(clusters, dataSet):
-    centroids = []
-    for cluster in clusters:
-        if len(cluster) is 0:
-            continue
-        centroid = [cluster[0][0][0]] + ([0] * (dataSet.shape[1] - 1))  # Is 7 + 1
-        for data in cluster:
-            for elIndex in range(1, dataSet.shape[1]):  # Every element in original point data
-                centroid[elIndex] += data[1][elIndex]
-        for elIndex in range(1, dataSet.shape[1]):
-            centroid[elIndex] = centroid[elIndex] / len(cluster)
-        centroids.append(centroid)
-    return numpy.array(centroids)
-
-
-def CalculateBestCentroids(centroids, dataSet, k, nRecalc):
-    for i in range(nRecalc):
-        centroids = RecalculateCentroidPosition(MakeClusters(indexDistanceToCentroids(centroids, dataSet), k), dataSet)
-    return centroids
-
-
-def CheckDifferencial(distentces):
-    if len(distentces) < 3:  # Minimum of 3 entries because of double differential
-        return 0
-    return numpy.diff(distentces, n=2)[-1]
-
-
-def CalculateBestK(dataSet, nRecalc):
-    distentces = []
-    for k in range(2, len(dataSet) - 1):
-        centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, nRecalc)
-        clusters = MakeClusters(indexDistanceToCentroids(centroids, dataSet), k)
-        totalDistanceOfCluster = 0
-        for cluster in clusters:
-            if len(cluster) > 0:
-                for data in cluster[0]:
-                    totalDistanceOfCluster += data[1]
-        distentces.append(totalDistanceOfCluster)
-        if CheckDifferencial(distentces) < 0:
-            return k - 1
+def RecalculateCentroidPosition(clusters, dataSet):                     # Recalculates the centroids positions based on the clusters
+    centroids = []                                                      # Make centroid list
+    for cluster in clusters:                                            # For every element in clusters
+        if len(cluster) is 0:                                           # If the element is empty
+            continue                                                    # Then skip this element
+        centroid = [cluster[0][0][0]] + ([0] * (dataSet.shape[1] - 1))  # Centroid is a empty cluster plus (The number of sets in the dataset) empty elements
+        for data in cluster:                                            # For every element in cluster
+            for elIndex in range(1, dataSet.shape[1]):                  # Every element in range of the number of sets in the dataset
+                centroid[elIndex] += data[1][elIndex]                   # Add data[1] to centroid(datapoint data)
+        for elIndex in range(1, dataSet.shape[1]):                      # Every element in range of the number of sets in the dataset
+            centroid[elIndex] = centroid[elIndex] / len(cluster)        # The everage point is all the data combined defided by the number of entries
+        centroids.append(centroid)                                      # Add calculated centroid to centroid list
+    return numpy.array(centroids)                                       # Returns numoy array of recaculated centroids
 
 
 
+def CalculateBestCentroids(centroids, dataSet, k, nRecalc):             # This function recalculates centoriods nRecalc times. (For a given K)
+    for i in range(nRecalc):                                            # For nRecalc times
+        centroids = RecalculateCentroidPosition(MakeClusters(indexDistanceToCentroids(centroids, dataSet), k), dataSet) # Recalc the centroids
+    return centroids                                                    # Returns the best centroid for the given data
 
 
+def CheckDifferencial(distentces):             # Calcualtes the dubbel differencial for a given list
+    if len(distentces) < 3:                    # Minimum of 3 entries because of double differential
+        return 0                               # If not then return 0
+    return numpy.diff(distentces, n=2)[-1]     # Returns dubbel differencial from the given list
+
+
+def CalculateBestK(dataSet, nRecalc):                                                           # Calculates the best K for the given dataSet
+    distentces = []                                                                             # Create a empty list of distances
+    for k in range(2, len(dataSet) - 1):                                                        # For in range of k = 2, to k is max-1
+        centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, nRecalc)  # Calculate the centorids for the dataSet 
+        clusters = MakeClusters(indexDistanceToCentroids(centroids, dataSet), k)                # Create Clusters
+        totalDistanceOfCluster = 0                                                              # Create var that will be used to store the total distance of the clusters(Distance to centroids)
+        for cluster in clusters:                                                                # For every element in clusters
+            if len(cluster) > 0:                                                                # Only if the cluster isn't empty
+                for data in cluster[0]:                                                         # For every emelent in cluster[0]
+                    totalDistanceOfCluster += data[1]                                           # Add distance to centorid to totalDistanceOfCluster
+        distentces.append(totalDistanceOfCluster)                                               # Add total distance to distances list
+        if CheckDifferencial(distentces) < 0:                                                   # If the dubbel differencial is negative the best K is surpased 
+            return k - 1                                                                        # Because of that return the previous K
+
+
+
+
+nRecalc = 20 # The bigger this var, the longer it will take to calculate the best K, but it will return better results
 for i in range(50):
-    print(CalculateBestK(dataSet, 20))
+    print(CalculateBestK(dataSet, nRecalc)) 
