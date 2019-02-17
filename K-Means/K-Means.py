@@ -72,10 +72,10 @@ def RecalculateCentroidPosition(clusters, dataSet):                     # Recalc
 
 
 
-def CalculateBestCentroids(centroids, dataSet, k, nRecalc):             # This function recalculates centoriods nRecalc times. (For a given K)
-    for i in range(nRecalc):                                            # For nRecalc times
+def CalculateBestCentroids(centroids, dataSet, k, numberOfRecalculations): # This function recalculates centoriods numberOfRecalculations times. (For a given K)
+    for _i in range(numberOfRecalculations):                                # For numberOfRecalculations times
         centroids = RecalculateCentroidPosition(MakeClusters(indexDistanceToCentroids(centroids, dataSet), k), dataSet) # Recalc the centroids
-    return centroids                                                    # Returns the best centroid for the given data
+    return centroids                                                       # Returns the best centroid for the given data
 
 
 def CheckDifferencial(distentces):             # Calcualtes the dubbel differencial for a given list
@@ -84,10 +84,10 @@ def CheckDifferencial(distentces):             # Calcualtes the dubbel differenc
     return numpy.diff(distentces, n=2)[-1]     # Returns dubbel differencial from the given list
 
 
-def CalculateBestK(dataSet, nRecalc):                                                           # Calculates the best K for the given dataSet
+def CalculateBestK(dataSet, numberOfRecalculations):                                            # Calculates the best K for the given dataSet
     distentces = []                                                                             # Create a empty list of distances
     for k in range(2, len(dataSet) - 1):                                                        # For in range of k = 2, to k is max-1
-        centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, nRecalc)  # Calculate the centorids for the dataSet 
+        centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, numberOfRecalculations)  # Calculate the centorids for the dataSet 
         clusters = MakeClusters(indexDistanceToCentroids(centroids, dataSet), k)                # Create Clusters
         totalDistanceOfCluster = 0                                                              # Create var that will be used to store the total distance of the clusters(Distance to centroids)
         for cluster in clusters:                                                                # For every element in clusters
@@ -99,8 +99,28 @@ def CalculateBestK(dataSet, nRecalc):                                           
             return k - 1                                                                        # Because of that return the previous K
 
 
+def MostCommonInList(list):
+    return max(set(list), key=list.count,default=0)  # Gets the most common element(season) in the list and returns this element.
 
 
-nRecalc = 20 # The bigger this var, the longer it will take to calculate the best K, but it will return better results
-for i in range(50):
-    print(CalculateBestK(dataSet, nRecalc)) 
+def Run(dataSet, numberOfAttemps, numberOfRecalculations):               # Finds the best K for the given dataSet
+    listOfKs = []                                                        # Create a list for the Ks
+    for _i in range(numberOfAttemps):                                    # For the number of attemps given
+        listOfKs.append(CalculateBestK(dataSet, numberOfRecalculations)) # Add the result to the list
+    mostCommonK = MostCommonInList(listOfKs)                             # Get the most common in this list
+    return [mostCommonK,listOfKs]                                        # Returns the most common K and the list of Ks
+
+def Certainty(listOfKs):                                                 # Shows how Certian the AI is of it's calculations 
+    uniqueKs = set(listOfKs)
+    print("\nCertainty")                                                   # Gets the unique items from listOfKs
+    for i in uniqueKs:                                                   # For every unique element
+        print(f"{i}: {100/len(listOfKs)*listOfKs.count(i)}%")            # Print the K and the procentage of occurance
+
+
+numberOfRecalculations = 100     # The bigger this var, the beter the centroids are centerd
+numberOfAttemps = 100            # How many differend times random centroid will be used
+
+resultList = Run(dataSet, numberOfAttemps, numberOfRecalculations)
+print(resultList[0])
+
+Certainty(resultList[1])
