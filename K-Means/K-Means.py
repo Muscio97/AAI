@@ -78,14 +78,14 @@ def CalculateBestCentroids(centroids, dataSet, k, numberOfRecalculations): # Thi
     return centroids                                                       # Returns the best centroid for the given data
 
 
-def CheckDifferencial(distentces):             # Calcualtes the dubbel differencial for a given list
-    if len(distentces) < 3:                    # Minimum of 3 entries because of double differential
+def CheckDifferencial(distances):             # Calcualtes the dubbel differencial for a given list
+    if len(distances) < 3:                    # Minimum of 3 entries because of double differential
         return 0                               # If not then return 0
-    return numpy.diff(distentces, n=2)[-1]     # Returns dubbel differencial from the given list
+    return numpy.diff(distances, n=2)[-1]     # Returns dubbel differencial from the given list
 
 
 def CalculateBestK(dataSet, numberOfRecalculations):                                            # Calculates the best K for the given dataSet
-    distentces = []                                                                             # Create a empty list of distances
+    distances = []                                                                             # Create a empty list of distances
     for k in range(2, len(dataSet) - 1):                                                        # For in range of k = 2, to k is max-1
         centroids = CalculateBestCentroids(GenerateCentroids(dataSet, k), dataSet, k, numberOfRecalculations)  # Calculate the centorids for the dataSet 
         clusters = MakeClusters(indexDistanceToCentroids(centroids, dataSet), k)                # Create Clusters
@@ -94,9 +94,10 @@ def CalculateBestK(dataSet, numberOfRecalculations):                            
             if len(cluster) > 0:                                                                # Only if the cluster isn't empty
                 for data in cluster[0]:                                                         # For every emelent in cluster[0]
                     totalDistanceOfCluster += data[1]                                           # Add distance to centorid to totalDistanceOfCluster
-        distentces.append(totalDistanceOfCluster)                                               # Add total distance to distances list
-        if CheckDifferencial(distentces) < 0:                                                   # If the dubbel differencial is negative the best K is surpased 
-            return k - 1                                                                        # Because of that return the previous K
+        distances.append(totalDistanceOfCluster/k)                                               # Add total distance to distances list
+        print(f"Total distance {k}: {totalDistanceOfCluster/k}")
+        if CheckDifferencial(distances) < 0:                                                   # If the dubbel differencial is negative the best K is surpased 
+            return k - 1                                                                    # Because of that return the previous K
 
 
 def MostCommonInList(list):
@@ -117,8 +118,8 @@ def Certainty(listOfKs):                                                 # Shows
         print(f"{i}: {100/len(listOfKs)*listOfKs.count(i)}%")            # Print the K and the procentage of occurance
 
 
-numberOfRecalculations = 100     # The bigger this var, the beter the centroids are centerd
-numberOfAttemps = 100            # How many differend times random centroid will be used
+numberOfRecalculations = 30     # The bigger this var, the beter the centroids are centerd
+numberOfAttemps = 10            # How many differend times random centroid will be used
 
 resultList = Run(dataSet, numberOfAttemps, numberOfRecalculations)
 print(resultList[0])
