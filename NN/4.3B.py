@@ -1,4 +1,6 @@
-import random
+from math import exp
+from random import seed, random
+
 
 class Neuron:
     def __init__(self):
@@ -27,7 +29,7 @@ class HiddenNeuron(Neuron):
         super().__init__()
         self.bias = InputNeuron()
         self.bias.set_val(-1)
-        self.bias_weight = random.uniform(-1, 1)
+        self.bias_weight = random()
         if issubclass(type(inputs), Neuron):
             weight = 0
             self.inputs = [[weight, inputs]]
@@ -43,14 +45,15 @@ class HiddenNeuron(Neuron):
         for neuron in self.inputs:
             val += neuron[0] * neuron[1].get_output_val()
         val += self.bias_weight * self.bias.get_output_val()
-        self.last_output = max(0, val)
+        # self.last_output = max(0, val)
+        self.last_output = 1.0 / (1.0 + exp(-val))
         return self.last_output
 
     @staticmethod
     def gen_weights(inputs):
         newinputs = []
         for i in inputs:
-            weight = random.uniform(-1, 1)
+            weight = random()
             newinputs.append([weight, i])
         return newinputs
 
@@ -86,6 +89,7 @@ class InputNeuron(Neuron):
 
 class NN:
     def __init__(self, n):
+        seed(1)
         self.inputs = []
         for i in range(n[0]):
             self.inputs.append(InputNeuron())
@@ -112,18 +116,23 @@ class NN:
         for output in self.outputs:
             output.calculate_delta_for_inputs()
 
-    def train(self, trainSet, learnRate, ntimes, expectedSet):
-        for e in range(ntimes):
+    # data_set: set of data to use as inputs
+    # learn_set: set of data of the expected result of the network
+    # learn_rate:
+    # n_epoch: number of times to loop
+    # print_errors: print the amount of error per epoch
+    def train(self, data_set, learn_set, learn_rate=1, n_epoch=50, print_errors=False):
+        for epoch in range(n_epoch):
             error = 0
-            for t in range(len(trainSet)):
-                outputs = self.run(trainSet[t])
-                expected = expectedSet[t]
+            for t in range(len(data_set)):
+                outputs = self.run(data_set[t])
                 for i in range(len(outputs)):
-                    error += (expected[i] - outputs[i]) ** 2
-                self.backward_propagation(expected)
+                    error += (learn_set[t][i] - outputs[i]) ** 2
+                self.backward_propagation(learn_set[t])
                 for o in self.outputs:
-                    o.update_weights(learnRate)
-            print('>epoch=%d, lrate=%.3f, error=%.3f' % (e, learnRate, error))
+                    o.update_weights(learn_rate)
+            if print_errors:
+                print('>epoch=%d, learnRate=%.3f, error=%.3f' % (epoch, learn_rate, error))
 
     def run(self, input):
         if len(input) is not len(self.inputs):
@@ -137,30 +146,32 @@ class NN:
         return out
 
 
-dataset = [[2.7810836, 2.550537003, 0],
-           [1.465489372, 2.362125076, 0],
-           [3.396561688, 4.400293529, 0],
-           [1.38807019, 1.850220317, 0],
-           [3.06407232, 3.005305973, 0],
-           [7.627531214, 2.759262235, 1],
-           [5.332441248, 2.088626775, 1],
-           [6.922596716, 1.77106367, 1],
-           [8.675418651, -0.242068655, 1],
-           [7.673756466, 3.508563011, 1]]
-n_inputs = len(dataset[0]) - 1
-n_outputs = len(set([row[-1] for row in dataset]))
-testset = []
-for d in range(len(dataset)):
-    expected = [0 for i in range(n_outputs)]
-    expected[dataset[d][-1]] = 1
-    testset.append(expected)
-    dataset[d] = dataset[d][:-1]
+if __name__ == "__main__":
+    dataset = [[2.7810836, 2.550537003, 0],
+               [1.465489372, 2.362125076, 0],
+               [3.396561688, 4.400293529, 0],
+               [1.38807019, 1.850220317, 0],
+               [3.06407232, 3.005305973, 0],
+               [7.627531214, 2.759262235, 1],
+               [5.332441248, 2.088626775, 1],
+               [6.922596716, 1.77106367, 1],
+               [8.675418651, -0.242068655, 1],
+               [7.673756466, 3.508563011, 1]]
+    n_inputs = len(dataset[0]) - 1
+    n_outputs = len(set([row[-1] for row in dataset]))
+    testset = []
+    for d in range(len(dataset)):
+        expected = [0 for i in range(n_outputs)]
+        expected[dataset[d][-1]] = 1
+        testset.append(expected)
+        dataset[d] = dataset[d][:-1]
 
-nn = NN([n_inputs, 5, n_outputs])
-print(testset[5])
-print(nn.run(testset[5]))
-nn.train(dataset, 1, 50, testset)
-for i in range(5):
-    print()
-    print(testset[i])
-    print(nn.run(testset[i]))
+    nn = NN([n_inputs, 5, n_outputs])
+    print(testset[5])
+    print(nn.run(dataset[5]))
+    nn.train(dataset, testset)
+    for i in range(5):
+        print("Test: ", end='')
+        print(testset[i], end='\t')
+        print("Output: ", end='')
+        print(nn.run(dataset[i]))
