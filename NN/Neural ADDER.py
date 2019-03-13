@@ -1,5 +1,6 @@
 class Neuron:
     @staticmethod
+    # Creates weights and combines them to a neuron
     def gen_weights(neurons):
         new_neurons = []
         for neuron in neurons:
@@ -7,13 +8,14 @@ class Neuron:
             new_neurons.append([weight, neuron])
         return new_neurons
 
+    # because of inheritance
     def get_output_val(self):
         return 0
 
 
 class HiddenNeuron(Neuron):
     inputs = []
-
+    # Creates neurons
     def __init__(self, inputs):
         if issubclass(type(inputs), Neuron):
             weight = 0
@@ -24,7 +26,7 @@ class HiddenNeuron(Neuron):
             elif type(inputs[0]) is list:
                 if issubclass(type(inputs[0][1]), Neuron):
                     self.inputs = inputs
-
+    # Returns output
     def get_output_val(self):
         val = 0
         for neuron in self.inputs:
