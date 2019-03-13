@@ -1,0 +1,62 @@
+'''Trains a simple deep NN on the MNIST dataset.
+
+Gets to 98.40% test accuracy after 20 epochs
+(there is *a lot* of margin for parameter tuning).
+2 seconds per epoch on a K520 GPU.
+'''
+
+from __future__ import print_function
+
+import keras
+from keras.datasets import mnist
+from keras.layers import Dense, Dropout
+from keras.models import Sequential
+from keras.optimizers import RMSprop
+
+# these values were chosen because we used this on a fast gpu
+batch_size = 1000
+num_classes = 10
+epochs = 10
+
+# the data, split between train and test sets
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Define the dataset to train the network on
+x_train = x_train.reshape(60000, 784)
+# Define the dataset to test the network on
+x_test = x_test.reshape(10000, 784)
+
+# convert class vectors to binary class matrices
+y_train = keras.utils.to_categorical(y_train, num_classes)
+y_test = keras.utils.to_categorical(y_test, num_classes)
+
+# We have chosen to use relu beacuse this is used in the exam (Good practice),
+# the last is softmax because it gives us the best results.
+# The values were choosen by trail and error.
+
+# Create network
+model = Sequential()
+model.add(Dense(90, activation='relu', input_shape=(784,)))
+model.add(Dropout(0.2))
+model.add(Dense(90, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(90, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(num_classes, activation='softmax'))
+
+# prints a summary of the network.
+model.summary()
+# "compiles" the moddel for the gpu(or cpu)
+model.compile(loss='categorical_crossentropy',
+              optimizer=RMSprop(),
+              metrics=['accuracy'])
+
+# Train the network
+history = model.fit(x_train, y_train,
+                    batch_size=batch_size,
+                    epochs=epochs,
+                    verbose=1,
+                    validation_data=(x_test, y_test))
+score = model.evaluate(x_test, y_test, verbose=0)
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])
